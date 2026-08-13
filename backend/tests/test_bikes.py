@@ -119,6 +119,34 @@ async def test_image_upload_rejects_disguised_file(client, make_user):
     assert r.status_code == 400
 
 
+async def test_search_filters_and_sort(client, make_user):
+    owner = await make_user("searchowner@example.com")
+    await client.post(BIKES, json=BIKE_PAYLOAD, headers=owner["headers"])  # sport, $45
+    cruiser = {
+        **BIKE_PAYLOAD,
+        "title": "2019 Harley Iron 883",
+        "make": "Harley-Davidson",
+        "model": "Iron 883",
+        "category": "cruiser",
+        "price_per_day": "100.00",
+    }
+    await client.post(BIKES, json=cruiser, headers=owner["headers"])
+
+    by_category = await client.get(BIKES, params={"category": "cruiser"})
+    assert by_category.json()["total"] == 1
+    assert by_category.json()["items"][0]["make"] == "Harley-Davidson"
+
+    by_price = await client.get(BIKES, params={"min_price": "50"})
+    assert by_price.json()["total"] == 1
+
+    by_keyword = await client.get(BIKES, params={"q": "Ninja"})
+    assert by_keyword.json()["total"] == 1
+
+    cheapest_first = await client.get(BIKES, params={"sort": "price_asc"})
+    prices = [item["price_per_day"] for item in cheapest_first.json()["items"]]
+    assert prices == ["45.00", "100.00"]
+
+
 async def test_image_upload_requires_ownership(client, make_user):
     owner = await make_user("owner7@example.com")
     attacker = await make_user("attacker2@example.com")

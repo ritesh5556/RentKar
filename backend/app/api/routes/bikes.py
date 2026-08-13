@@ -1,6 +1,7 @@
 """Bike listing endpoints."""
 
-from typing import Annotated
+from decimal import Decimal
+from typing import Annotated, Literal
 
 from fastapi import APIRouter, File, HTTPException, Query, UploadFile, status
 
@@ -8,7 +9,7 @@ from app.core.config import get_settings
 from app.core.deps import CurrentUser, DbSession, OptionalUser, VerifiedUser
 from app.models.bike import Bike, BikeImage
 from app.models.user import User
-from app.schemas.bike import BikeCreate, BikeOut, BikeSummary, BikeUpdate
+from app.schemas.bike import BikeCreate, BikeOut, BikeSummary, BikeUpdate, Category
 from app.schemas.common import Page
 from app.services import bike_service, upload_service
 
@@ -34,10 +35,28 @@ def _to_summary(bike: Bike) -> BikeSummary:
 @router.get("", response_model=Page[BikeSummary])
 async def list_bikes(
     db: DbSession,
+    q: Annotated[str | None, Query(max_length=100)] = None,
+    city: Annotated[str | None, Query(max_length=80)] = None,
+    state: Annotated[str | None, Query(max_length=40)] = None,
+    category: Annotated[Category | None, Query()] = None,
+    min_price: Annotated[Decimal | None, Query(ge=0)] = None,
+    max_price: Annotated[Decimal | None, Query(ge=0)] = None,
+    sort: Annotated[Literal["newest", "price_asc", "price_desc"], Query()] = "newest",
     page: Annotated[int, Query(ge=1)] = 1,
     page_size: Annotated[int, Query(ge=1, le=50)] = 20,
 ) -> Page[BikeSummary]:
-    bikes, total = await bike_service.list_active_bikes(db, page, page_size)
+    bikes, total = await bike_service.search_bikes(
+        db,
+        q=q,
+        city=city,
+        state=state,
+        category=category,
+        min_price=min_price,
+        max_price=max_price,
+        sort=sort,
+        page=page,
+        page_size=page_size,
+    )
     return Page(
         items=[_to_summary(b) for b in bikes], total=total, page=page, page_size=page_size
     )

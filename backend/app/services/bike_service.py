@@ -1,7 +1,9 @@
 """Bike listing domain logic, including object-level authorization (anti-IDOR)."""
 
+from decimal import Decimal
+
 from fastapi import HTTPException, status
-from sqlalchemy import func, select
+from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -60,17 +62,58 @@ async def delete_bike(db: AsyncSession, bike: Bike) -> None:
     await db.commit()
 
 
-async def list_active_bikes(
-    db: AsyncSession, page: int, page_size: int
+_SORTS = {
+    "newest": Bike.created_at.desc(),
+    "price_asc": Bike.price_per_day.asc(),
+    "price_desc": Bike.price_per_day.desc(),
+}
+
+
+async def search_bikes(
+    db: AsyncSession,
+    *,
+    q: str | None = None,
+    city: str | None = None,
+    state: str | None = None,
+    category: str | None = None,
+    min_price: Decimal | None = None,
+    max_price: Decimal | None = None,
+    sort: str = "newest",
+    page: int = 1,
+    page_size: int = 20,
 ) -> tuple[list[Bike], int]:
-    """Basic active-listing feed (Phase 3 adds filters/sort/availability)."""
+    """Filtered, sorted, paginated feed of active listings.
+
+    (Date-availability filtering is added in Phase 4 once bookings exist.)
+    """
     conditions = [Bike.status == "active"]
+    if q:
+        like = f"%{q}%"
+        conditions.append(
+            or_(
+                Bike.title.ilike(like),
+                Bike.make.ilike(like),
+                Bike.model.ilike(like),
+                Bike.description.ilike(like),
+            )
+        )
+    if city:
+        conditions.append(Bike.city.ilike(f"%{city}%"))
+    if state:
+        conditions.append(Bike.state.ilike(state))
+    if category:
+        conditions.append(Bike.category == category)
+    if min_price is not None:
+        conditions.append(Bike.price_per_day >= min_price)
+    if max_price is not None:
+        conditions.append(Bike.price_per_day <= max_price)
+
     total = await db.scalar(select(func.count()).select_from(Bike).where(*conditions)) or 0
     rows = await db.scalars(
         select(Bike)
         .where(*conditions)
         .options(selectinload(Bike.images))
-        .order_by(Bike.created_at.desc())
+        .order_by(_SORTS.get(sort, Bike.created_at.desc()))
         .offset((page - 1) * page_size)
         .limit(page_size)
     )
