@@ -57,3 +57,29 @@ async def get_current_verified_user(user: CurrentUser) -> User:
 
 
 VerifiedUser = Annotated[User, Depends(get_current_verified_user)]
+
+
+async def get_optional_user(
+    credentials: Annotated[HTTPAuthorizationCredentials | None, Depends(_bearer)],
+    db: DbSession,
+) -> User | None:
+    """Resolve the user if a valid token is present, else None (no error).
+
+    Used by public endpoints that tailor their response for the owner/viewer.
+    """
+    if credentials is None:
+        return None
+    try:
+        payload = decode_access_token(credentials.credentials)
+        if payload.get("type") != "access":
+            return None
+        user_id = int(payload["sub"])
+    except (jwt.PyJWTError, KeyError, ValueError, TypeError):
+        return None
+    user = await db.get(User, user_id)
+    if user is None or not user.is_active:
+        return None
+    return user
+
+
+OptionalUser = Annotated[User | None, Depends(get_optional_user)]

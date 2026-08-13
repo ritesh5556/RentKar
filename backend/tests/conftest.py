@@ -13,10 +13,12 @@ os.environ.setdefault("JWT_SECRET", "test-secret-not-for-production-000000000000
 
 import pytest_asyncio
 from httpx import ASGITransport, AsyncClient
+from sqlalchemy import update
 
 import app.models  # noqa: F401  (register models on Base.metadata)
-from app.core.database import Base, engine
+from app.core.database import AsyncSessionLocal, Base, engine
 from app.main import app
+from app.models.user import User
 
 
 @pytest_asyncio.fixture(autouse=True)
@@ -33,3 +35,27 @@ async def _setup_db():
 async def client():
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as c:
         yield c
+
+
+@pytest_asyncio.fixture
+async def make_user(client):
+    """Register (and by default email-verify) a user, then return their auth header + id."""
+
+    async def _make(email: str, password: str = "password123", full_name: str = "Rider",
+                    verified: bool = True) -> dict:
+        await client.post(
+            "/api/auth/register",
+            json={"email": email, "password": password, "full_name": full_name},
+        )
+        if verified:
+            async with AsyncSessionLocal() as session:
+                await session.execute(
+                    update(User).where(User.email == email.lower()).values(is_email_verified=True)
+                )
+                await session.commit()
+        login = await client.post("/api/auth/login", json={"email": email, "password": password})
+        token = login.json()["access_token"]
+        me = await client.get("/api/auth/me", headers={"Authorization": f"Bearer {token}"})
+        return {"headers": {"Authorization": f"Bearer {token}"}, "id": me.json()["id"]}
+
+    return _make

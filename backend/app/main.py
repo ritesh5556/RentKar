@@ -7,6 +7,7 @@ from pathlib import Path
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from fastapi.staticfiles import StaticFiles
 from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
 
@@ -66,3 +67,8 @@ app.add_middleware(
 # --- Routers ---------------------------------------------------------------
 app.include_router(health.router)
 app.include_router(api_router)
+
+# Serve uploaded (re-encoded, safe) images. The nosniff header from
+# SecurityHeadersMiddleware prevents content-type sniffing.
+Path(settings.upload_dir).mkdir(parents=True, exist_ok=True)
+app.mount("/uploads", StaticFiles(directory=settings.upload_dir), name="uploads")
