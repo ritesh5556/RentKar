@@ -1,0 +1,31 @@
+# Optional PostgreSQL — for when you outgrow the dev SQLite database.
+#
+#   docker compose up -d
+#
+# Then in backend/.env set:
+#   DATABASE_URL=postgresql+asyncpg://renkkar:renkkar@localhost:5432/renkkar
+# and apply migrations:
+#   uv run alembic upgrade head
+#
+# No application code changes are required — see docs/ARCHITECTURE.md §4.
+
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: renkkar
+      POSTGRES_PASSWORD: renkkar
+      POSTGRES_DB: renkkar
+    ports:
+      - '5432:5432'
+    volumes:
+      - renkkar_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U renkkar']
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  renkkar_pgdata:
