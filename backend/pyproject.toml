@@ -38,15 +38,19 @@ package = false
 [tool.ruff]
 line-length = 100
 target-version = "py312"
+# Alembic version scripts are auto-generated; don't lint them.
+extend-exclude = ["alembic/versions"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "B", "UP", "S"]
 
 [tool.ruff.lint.per-file-ignores]
-"tests/*" = ["S101"]        # asserts are fine in tests
-"alembic/*" = ["E402"]      # alembic env import order
+"tests/*" = ["S101", "S105", "S106", "S107", "E402"]  # asserts + test creds + late imports
+"alembic/*" = ["E402"]
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
-asyncio_default_fixture_loop_scope = "function"
+asyncio_default_fixture_loop_scope = "session"
+asyncio_default_test_loop_scope = "session"
+pythonpath = ["."]
 testpaths = ["tests"]

@@ -10,6 +10,7 @@ from fastapi.responses import JSONResponse
 from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
 
+from app.api.router import api_router
 from app.api.routes import health
 from app.core.config import get_settings
 from app.core.middleware import SecurityHeadersMiddleware
@@ -64,3 +65,4 @@ app.add_middleware(
 
 # --- Routers ---------------------------------------------------------------
 app.include_router(health.router)
+app.include_router(api_router)

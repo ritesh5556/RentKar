@@ -5,11 +5,10 @@ from sqlalchemy import pool
 from sqlalchemy.engine import Connection
 from sqlalchemy.ext.asyncio import async_engine_from_config
 
-from alembic import context
-
 # Import app settings + metadata. Importing app.models registers every model
 # on Base.metadata so autogenerate sees the full schema.
 import app.models  # noqa: F401
+from alembic import context
 from app.core.config import get_settings
 from app.core.database import Base
 

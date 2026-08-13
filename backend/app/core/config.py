@@ -22,7 +22,7 @@ class Settings(BaseSettings):
     database_url: str = "sqlite+aiosqlite:///./renkkar.db"
 
     # Auth / JWT
-    jwt_secret: str = "dev-only-insecure-secret-change-me-to-a-long-random-value"
+    jwt_secret: str = "dev-only-insecure-secret-change-me-to-a-long-random-value"  # noqa: S105
     jwt_algorithm: str = "HS256"
     access_token_min: int = 30
     refresh_token_days: int = 7
