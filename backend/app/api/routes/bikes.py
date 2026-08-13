@@ -1,5 +1,6 @@
 """Bike listing endpoints."""
 
+from datetime import date
 from decimal import Decimal
 from typing import Annotated, Literal
 
@@ -11,7 +12,7 @@ from app.models.bike import Bike, BikeImage
 from app.models.user import User
 from app.schemas.bike import BikeCreate, BikeOut, BikeSummary, BikeUpdate, Category
 from app.schemas.common import Page
-from app.services import bike_service, upload_service
+from app.services import bike_service, booking_service, upload_service
 
 settings = get_settings()
 router = APIRouter(prefix="/bikes", tags=["bikes"])
@@ -42,6 +43,8 @@ async def list_bikes(
     min_price: Annotated[Decimal | None, Query(ge=0)] = None,
     max_price: Annotated[Decimal | None, Query(ge=0)] = None,
     sort: Annotated[Literal["newest", "price_asc", "price_desc"], Query()] = "newest",
+    start_date: Annotated[date | None, Query()] = None,
+    end_date: Annotated[date | None, Query()] = None,
     page: Annotated[int, Query(ge=1)] = 1,
     page_size: Annotated[int, Query(ge=1, le=50)] = 20,
 ) -> Page[BikeSummary]:
@@ -54,6 +57,8 @@ async def list_bikes(
         min_price=min_price,
         max_price=max_price,
         sort=sort,
+        start_date=start_date,
+        end_date=end_date,
         page=page,
         page_size=page_size,
     )
@@ -78,6 +83,14 @@ async def create_bike(data: BikeCreate, user: VerifiedUser, db: DbSession) -> Bi
 async def get_bike(bike_id: int, viewer: OptionalUser, db: DbSession) -> BikeOut:
     bike = await bike_service.get_bike_or_404(db, bike_id)
     return _to_out(bike, viewer)
+
+
+@router.get("/{bike_id}/availability")
+async def check_availability(
+    bike_id: int, db: DbSession, start: date, end: date
+) -> dict[str, bool]:
+    await bike_service.get_bike_or_404(db, bike_id)
+    return {"available": await booking_service.is_available(db, bike_id, start, end)}
 
 
 @router.patch("/{bike_id}", response_model=BikeOut)

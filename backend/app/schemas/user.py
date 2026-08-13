@@ -36,3 +36,10 @@ class UserUpdate(BaseModel):
     bio: str | None = Field(default=None, max_length=1000)
     avatar_url: str | None = Field(default=None, max_length=512)
     date_of_birth: date | None = None
+
+
+class IdentityVerificationRequest(BaseModel):
+    """Input to the MOCK KYC endpoint (stands in for Persona/Veriff/Checkr)."""
+
+    driver_license_number: str = Field(min_length=3, max_length=64)
+    date_of_birth: date | None = None

@@ -1,13 +1,15 @@
 """Bike listing domain logic, including object-level authorization (anti-IDOR)."""
 
+from datetime import date
 from decimal import Decimal
 
 from fastapi import HTTPException, status
-from sqlalchemy import func, or_, select
+from sqlalchemy import exists, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.models.bike import Bike
+from app.models.booking import BLOCKING_STATUSES, Booking
 from app.models.user import User
 from app.schemas.bike import BikeCreate, BikeUpdate
 
@@ -79,12 +81,15 @@ async def search_bikes(
     min_price: Decimal | None = None,
     max_price: Decimal | None = None,
     sort: str = "newest",
+    start_date: date | None = None,
+    end_date: date | None = None,
     page: int = 1,
     page_size: int = 20,
 ) -> tuple[list[Bike], int]:
     """Filtered, sorted, paginated feed of active listings.
 
-    (Date-availability filtering is added in Phase 4 once bookings exist.)
+    If both start_date and end_date are given, bikes with an overlapping
+    pending/confirmed booking are excluded.
     """
     conditions = [Bike.status == "active"]
     if q:
@@ -107,6 +112,14 @@ async def search_bikes(
         conditions.append(Bike.price_per_day >= min_price)
     if max_price is not None:
         conditions.append(Bike.price_per_day <= max_price)
+    if start_date is not None and end_date is not None:
+        overlapping = select(Booking.id).where(
+            Booking.bike_id == Bike.id,
+            Booking.status.in_(BLOCKING_STATUSES),
+            Booking.start_date <= end_date,
+            Booking.end_date >= start_date,
+        )
+        conditions.append(~exists(overlapping))
 
     total = await db.scalar(select(func.count()).select_from(Bike).where(*conditions)) or 0
     rows = await db.scalars(
