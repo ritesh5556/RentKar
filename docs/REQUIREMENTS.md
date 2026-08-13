@@ -7,9 +7,14 @@
 
 ## 1. Vision & why this product
 
-People own bikes (scooters, motorcycles, e-bikes, bicycles) that sit idle most of the time. Others
-need a bike for a day, a trip, or a trial before buying. RenkKar connects the two sides — like
-"Turo for bikes."
+People own bikes (motorcycles, scooters, e-bikes) that sit idle most of the time. Others
+need a bike for a day, a trip, or a trial before buying. RenkKar connects the two sides.
+
+**Reference model — Riders Share.** RenkKar is modeled on [Riders Share](https://www.ridersshare.com/),
+the largest US peer-to-peer **motorcycle** rental marketplace. That anchors three product choices:
+it is **US-focused (USD)** and **motorcycle-centric** (listings carry make/model/year, category,
+engine cc, mileage), and it treats **rider screening, insurance/protection plans, and roadside
+assistance** as first-class — not afterthoughts.
 
 **Why a marketplace (two-sided) and not a rental shop?** A shop owns inventory and carries capital
 cost and risk. A marketplace instead *coordinates trust and money* between independent owners and

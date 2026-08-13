@@ -71,6 +71,11 @@ header is CWE-434 (unrestricted upload). Our layered defense and the reason for 
 - **Rental-terms acceptance** (timestamped) required to book — the liability record.
 - **Security deposit** on every bike, held at (mock) payment and released on completion — the core
   anti-damage/anti-theft mechanism.
+- **Protection plans + roadside assistance** (Riders Share model) — at checkout the renter picks a
+  basic/standard/premium tier (daily insurance fee + damage deductible); roadside assistance is
+  included on every rental. Mock coverage now; real underwriting is Phase 6+.
+- **Rider screening** — booking a motorized category requires `license_verified` in addition to
+  email verification (mock-toggled now; real license/ID/background checks in Phase 6+).
 - **Two-way reviews** — bidirectional reputation is the long-term trust engine.
 - **Location privacy** — exact address revealed only after a confirmed booking.
 - **KYC status fields** (`id_verified`, `license_verified`) on the user, with bookings **gated** on
