@@ -1,0 +1,30 @@
+# Python
+__pycache__/
+*.pyc
+.venv/
+*.db
+*.sqlite3
+
+# Environment (never commit secrets)
+.env
+**/.env
+
+# Node / frontend
+node_modules/
+dist/
+frontend/dist/
+
+# Uploads (keep the folder, ignore contents)
+backend/uploads/*
+!backend/uploads/.gitkeep
+
+# Tool caches
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+
+# Editor / OS
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
