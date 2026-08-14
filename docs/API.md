@@ -2,8 +2,8 @@
 
 Base path: **`/api`** · Interactive docs (when running): **`/docs`** (Swagger) · **`/redoc`**.
 
-Status legend: ✅ implemented · 🔜 planned (by phase). This file is the design spec; it's updated as
-phases land. The live truth is always the auto-generated OpenAPI at `/docs`.
+Status: **✅ all backend endpoints below are implemented** (Phases 0–5). The live source of truth is
+the auto-generated OpenAPI at `/docs`.
 
 ---
 
@@ -14,76 +14,83 @@ phases land. The live truth is always the auto-generated OpenAPI at `/docs`.
   *Why:* see ARCHITECTURE §7 — short-lived bearer + revocable cookie balances safety and UX.
 - **Errors:** consistent JSON `{"detail": "<message>"}`; validation errors use FastAPI's 422 shape.
   Servers never return stack traces. *Why:* predictable client handling; no internal leakage.
-- **Pagination:** list endpoints take `page` (1-based) and `page_size` (**capped**, default 20) and
-  return `{ items, total, page, page_size }`. *Why:* an uncapped list is a DoS and data-dump risk.
-- **Money:** amounts are decimal strings/numbers computed by the **server**; clients display, never
-  decide. **Timestamps** are UTC ISO-8601.
+- **Pagination:** list endpoints take `page` (1-based) and `page_size` (**capped at 50**, default 20)
+  and return `{ items, total, page, page_size }`. *Why:* an uncapped list is a DoS / data-dump risk.
+- **Money:** USD; amounts are decimal strings computed by the **server** (clients display, never
+  decide). **Timestamps** are UTC ISO-8601.
 - **Ownership:** mutating another user's resource returns **403/404** by design (anti-IDOR).
 
 ---
 
 ## Auth — `/api/auth`
-| Method | Path | Auth | Purpose | Status |
-|--------|------|------|---------|--------|
-| POST | `/auth/register` | – | Create account (rate-limited); sends verification email | 🔜 P1 |
-| POST | `/auth/verify-email` | – | Consume a single-use token, mark email verified | 🔜 P1 |
-| POST | `/auth/login` | – | Issue access token + set refresh cookie (rate-limited) | 🔜 P1 |
-| POST | `/auth/refresh` | cookie | Rotate refresh token, issue new access token | 🔜 P1 |
-| POST | `/auth/logout` | cookie | Revoke refresh token, clear cookie | 🔜 P1 |
-| GET | `/auth/me` | bearer | Current user profile | 🔜 P1 |
+| Method | Path | Auth | Purpose |
+|--------|------|------|---------|
+| POST | `/auth/register` | – | Create account (rate-limited); logs a verification link (dev) |
+| POST | `/auth/verify-email` | – | Consume a single-use token, mark email verified |
+| POST | `/auth/login` | – | Issue access token + set refresh cookie (rate-limited) |
+| POST | `/auth/refresh` | cookie | Rotate refresh token, issue new access token |
+| POST | `/auth/logout` | cookie | Revoke refresh token, clear cookie |
+| GET | `/auth/me` | bearer | Current user profile |
 
 ## Users — `/api/users`
-| Method | Path | Auth | Purpose | Status |
-|--------|------|------|---------|--------|
-| GET | `/users/{id}` | – | **Public** profile (PII-minimized: name, join date, ratings) | 🔜 P1 |
-| PATCH | `/users/me` | bearer | Update own profile (whitelisted fields only) | 🔜 P1 |
+| Method | Path | Auth | Purpose |
+|--------|------|------|---------|
+| GET | `/users/{id}` | – | **Public** profile (PII-minimized) |
+| PATCH | `/users/me` | bearer | Update own profile (whitelisted fields only) |
+| POST | `/users/me/verify-identity` | bearer | **Mock KYC** — sets id/license verified + DOB (stands in for Persona/Veriff) |
 
 ## Bikes — `/api/bikes`
-| Method | Path | Auth | Purpose | Status |
-|--------|------|------|---------|--------|
-| GET | `/bikes` | – | Search/filter/sort/paginate (`q, city, type, min_price, max_price, start_date, end_date, sort, page, page_size`) | 🔜 P3 |
-| POST | `/bikes` | bearer (verified) | Create a listing | 🔜 P2 |
-| GET | `/bikes/{id}` | – | Listing detail (exact address hidden unless a confirmed booking exists) | 🔜 P2 |
-| PATCH | `/bikes/{id}` | owner | Update listing | 🔜 P2 |
-| DELETE | `/bikes/{id}` | owner | Delete listing | 🔜 P2 |
-| GET | `/bikes/mine` | bearer | Current user's listings (owner dashboard) | 🔜 P2 |
-| POST | `/bikes/{id}/images` | owner | Upload photo(s) — hardened (see SECURITY §3) | 🔜 P2 |
-| DELETE | `/bikes/{id}/images/{image_id}` | owner | Remove a photo | 🔜 P2 |
-| GET | `/bikes/{id}/availability?start=&end=` | – | Is the bike free for a range? | 🔜 P4 |
-| GET | `/bikes/{id}/reviews` | – | Reviews + average rating for a bike | 🔜 P5 |
+| Method | Path | Auth | Purpose |
+|--------|------|------|---------|
+| GET | `/bikes` | – | Search: `q, city, state, category, min_price, max_price, sort, start_date, end_date, page, page_size` (date range excludes unavailable bikes) |
+| POST | `/bikes` | bearer (verified) | Create a listing |
+| GET | `/bikes/{id}` | optional | Detail (exact address hidden unless owner); includes `avg_rating` |
+| PATCH | `/bikes/{id}` | owner | Update listing |
+| DELETE | `/bikes/{id}` | owner | Delete listing |
+| GET | `/bikes/mine` | bearer | Current user's listings |
+| POST | `/bikes/{id}/images` | owner | Upload photo(s) — hardened (SECURITY §3) |
+| DELETE | `/bikes/{id}/images/{image_id}` | owner | Remove a photo |
+| GET | `/bikes/{id}/availability?start=&end=` | – | Is the bike free for a range? |
+| GET | `/bikes/{id}/reviews` | – | Bike reviews + average rating |
 
 ## Bookings — `/api/bookings`
-| Method | Path | Auth | Purpose | Status |
-|--------|------|------|---------|--------|
-| POST | `/bookings` | renter (verified) | Request a booking (server computes total; overlap-checked; terms required) | 🔜 P4 |
-| GET | `/bookings/mine` | bearer | Bookings I made (as renter) | 🔜 P4 |
-| GET | `/bookings/incoming` | bearer | Requests on my bikes (as owner) | 🔜 P4 |
-| GET | `/bookings/{id}` | participant | Booking detail | 🔜 P4 |
-| POST | `/bookings/{id}/confirm` | owner | Approve a pending request | 🔜 P4 |
-| POST | `/bookings/{id}/reject` | owner | Reject a pending request | 🔜 P4 |
-| POST | `/bookings/{id}/cancel` | participant | Cancel before start | 🔜 P4 |
-| POST | `/bookings/{id}/pay` | renter | **Mock** pay rental + deposit hold (idempotent) | 🔜 P4 |
-| POST | `/bookings/{id}/complete` | owner | Mark completed, release deposit | 🔜 P4 |
+| Method | Path | Auth | Purpose |
+|--------|------|------|---------|
+| GET | `/bookings/plans` | – | Protection tiers (basic/standard/premium: daily fee + deductible) |
+| POST | `/bookings/quote` | – | Server-computed price breakdown (no booking created) |
+| POST | `/bookings` | renter (verified + screened) | Request a booking (server pricing; overlap-checked; terms required) |
+| GET | `/bookings/mine` | bearer | Bookings I made (as renter) |
+| GET | `/bookings/incoming` | bearer | Requests on my bikes (as owner) |
+| GET | `/bookings/{id}` | participant | Booking detail |
+| POST | `/bookings/{id}/confirm` | owner | Approve a pending request |
+| POST | `/bookings/{id}/reject` | owner | Reject a pending request |
+| POST | `/bookings/{id}/cancel` | participant | Cancel before start (refunds if paid) |
+| POST | `/bookings/{id}/pay` | renter | **Mock** pay rental + deposit hold (idempotent via `Idempotency-Key` header) |
+| POST | `/bookings/{id}/complete` | owner | Mark completed, release deposit |
 
 ## Reviews — `/api/reviews`
-| Method | Path | Auth | Purpose | Status |
-|--------|------|------|---------|--------|
-| POST | `/reviews` | participant | Review a **completed** booking (one per booking+target; two-way) | 🔜 P5 |
+| Method | Path | Auth | Purpose |
+|--------|------|------|---------|
+| POST | `/reviews` | participant | Review a **completed** booking (one per side; renter→bike, owner→renter) |
 
 ## System
-| Method | Path | Purpose | Status |
-|--------|------|---------|--------|
-| GET | `/health` | Liveness probe | ✅ |
-| GET | `/uploads/{file}` | Serve a stored image (controlled) | 🔜 P2 |
+| Method | Path | Purpose |
+|--------|------|---------|
+| GET | `/health` | Liveness probe |
+| GET | `/uploads/{...}` | Serve a stored (re-encoded) image |
 
 ---
 
-## Auth flow (sequence)
+## Golden-path sequence
 
 ```
-register ─▶ (email link) ─▶ verify-email ─▶ login ──▶ 200 { access_token }  + Set-Cookie: refresh=…; HttpOnly
-                                                        │
-   access token expires (~30m) ─▶ 401 ─▶ POST /auth/refresh (cookie) ─▶ new access_token (+ rotated cookie)
-                                                        │
-                                          logout ─▶ refresh token revoked, cookie cleared
+register (owner & renter) ─▶ verify-email ─▶ login
+renter: POST /users/me/verify-identity        (mock KYC → license_verified)
+owner:  POST /bikes  (+ POST /bikes/{id}/images)
+renter: GET /bikes?city=Austin&start_date=…&end_date=…  ─▶  POST /bookings/quote  ─▶  POST /bookings
+owner:  POST /bookings/{id}/confirm
+renter: POST /bookings/{id}/pay   (Idempotency-Key: …)
+owner:  POST /bookings/{id}/complete
+renter: POST /reviews   ·   owner: POST /reviews
+anyone: GET /bikes/{id}/reviews
 ```
