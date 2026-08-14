@@ -1,17 +1,16 @@
-import { forwardRef, type InputHTMLAttributes } from 'react'
+import { forwardRef, type TextareaHTMLAttributes } from 'react'
 import { cn } from '../../lib/cn'
 
-interface Props extends InputHTMLAttributes<HTMLInputElement> {
+interface Props extends TextareaHTMLAttributes<HTMLTextAreaElement> {
   label?: string
   error?: string
-  hint?: string
 }
 
-const TextField = forwardRef<HTMLInputElement, Props>(
-  ({ label, error, hint, className, ...rest }, ref) => (
+const Textarea = forwardRef<HTMLTextAreaElement, Props>(
+  ({ label, error, className, ...rest }, ref) => (
     <label className="block">
       {label && <span className="mb-1.5 block text-sm font-medium text-ink">{label}</span>}
-      <input
+      <textarea
         ref={ref}
         className={cn(
           'w-full rounded-lg border bg-surface px-3 py-2.5 text-sm text-ink outline-none transition',
@@ -21,14 +20,10 @@ const TextField = forwardRef<HTMLInputElement, Props>(
         )}
         {...rest}
       />
-      {error ? (
-        <span className="mt-1 block text-xs text-danger">{error}</span>
-      ) : hint ? (
-        <span className="mt-1 block text-xs text-subtle">{hint}</span>
-      ) : null}
+      {error && <span className="mt-1 block text-xs text-danger">{error}</span>}
     </label>
   ),
 )
-TextField.displayName = 'TextField'
+Textarea.displayName = 'Textarea'
 
-export default TextField
+export default Textarea

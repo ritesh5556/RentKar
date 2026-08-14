@@ -1,12 +1,17 @@
 import { useState } from 'react'
+import { Link } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
+import { Mail, ShieldCheck } from 'lucide-react'
+import Container from '../components/ui/Container'
+import Card from '../components/ui/Card'
+import Badge from '../components/ui/Badge'
 import TextField from '../components/ui/TextField'
+import Textarea from '../components/ui/Textarea'
 import Button from '../components/ui/Button'
 import Alert from '../components/ui/Alert'
-import { api } from '../lib/api'
+import { updateProfile } from '../lib/users'
 import { apiErrorMessage } from '../lib/errors'
 import { useAuthStore } from '../store/authStore'
-import type { User } from '../types'
 
 interface FormValues {
   full_name: string
@@ -16,17 +21,11 @@ interface FormValues {
   bio: string
 }
 
-function Badge({ ok, label }: { ok: boolean; label: string }) {
+function VerifyBadge({ ok, label }: { ok: boolean; label: string }) {
   return (
-    <span
-      className={
-        ok
-          ? 'rounded-full bg-emerald-100 px-2 py-1 text-emerald-700'
-          : 'rounded-full bg-gray-100 px-2 py-1 text-gray-500'
-      }
-    >
+    <Badge tone={ok ? 'success' : 'neutral'}>
       {ok ? '✓' : '—'} {label}
-    </span>
+    </Badge>
   )
 }
 
@@ -50,14 +49,14 @@ export default function ProfilePage() {
   const onSubmit = async (values: FormValues) => {
     setStatus(null)
     try {
-      const { data } = await api.patch<User>('/users/me', {
+      const updated = await updateProfile({
         full_name: values.full_name,
         phone: values.phone || null,
         avatar_url: values.avatar_url || null,
         date_of_birth: values.date_of_birth || null,
         bio: values.bio || null,
       })
-      setUser(data)
+      setUser(updated)
       setStatus({ type: 'success', msg: 'Profile updated.' })
     } catch (e) {
       setStatus({ type: 'error', msg: apiErrorMessage(e, 'Could not update profile') })
@@ -65,16 +64,16 @@ export default function ProfilePage() {
   }
 
   return (
-    <div className="mx-auto max-w-lg">
-      <h1 className="mb-2 text-2xl font-bold">Your profile</h1>
-      <div className="mb-6 flex flex-wrap gap-2 text-xs">
-        <Badge ok={user.is_email_verified} label="Email verified" />
-        <Badge ok={user.id_verified} label="ID verified" />
-        <Badge ok={user.license_verified} label="License verified" />
+    <Container className="max-w-3xl py-10">
+      <h1 className="text-2xl font-bold text-ink">Your profile</h1>
+      <div className="mt-4 flex flex-wrap gap-2">
+        <VerifyBadge ok={user.is_email_verified} label="Email verified" />
+        <VerifyBadge ok={user.license_verified} label="License verified" />
+        <VerifyBadge ok={user.id_verified} label="ID verified" />
       </div>
 
       {!user.is_email_verified && (
-        <div className="mb-4">
+        <div className="mt-4">
           <Alert variant="info">
             Verify your email to list or book bikes. During development the verification link is
             printed in the backend logs.
@@ -82,26 +81,41 @@ export default function ProfilePage() {
         </div>
       )}
 
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-        {status && <Alert variant={status.type}>{status.msg}</Alert>}
-        <TextField label="Full name" {...register('full_name')} />
-        <TextField label="Phone" {...register('phone')} />
-        <TextField label="Avatar URL" {...register('avatar_url')} />
-        <TextField label="Date of birth" type="date" {...register('date_of_birth')} />
-        <label className="block">
-          <span className="mb-1 block text-sm font-medium text-gray-700">Bio</span>
-          <textarea
-            className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-emerald-500"
-            rows={3}
-            {...register('bio')}
-          />
-        </label>
-        <Button type="submit" loading={isSubmitting}>
-          Save changes
-        </Button>
-      </form>
+      {!user.license_verified && (
+        <Card className="mt-4 flex flex-col items-start justify-between gap-3 border-brand-200 bg-brand-50 p-4 sm:flex-row sm:items-center">
+          <div className="flex items-start gap-3">
+            <ShieldCheck className="mt-0.5 h-5 w-5 text-brand-700" />
+            <div>
+              <p className="font-medium text-ink">Verify your license to book</p>
+              <p className="text-sm text-muted">
+                Riders must verify a driver's license before booking a motorcycle.
+              </p>
+            </div>
+          </div>
+          <Link to="/verify-identity">
+            <Button size="sm">Verify now</Button>
+          </Link>
+        </Card>
+      )}
 
-      <p className="mt-6 text-sm text-gray-500">Signed in as {user.email}</p>
-    </div>
+      <Card className="mt-6 p-6">
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+          {status && <Alert variant={status.type}>{status.msg}</Alert>}
+          <TextField label="Full name" {...register('full_name')} />
+          <div className="grid gap-4 sm:grid-cols-2">
+            <TextField label="Phone" {...register('phone')} />
+            <TextField label="Date of birth" type="date" {...register('date_of_birth')} />
+          </div>
+          <TextField label="Avatar URL" {...register('avatar_url')} />
+          <Textarea label="Bio" rows={3} {...register('bio')} />
+          <Button type="submit" loading={isSubmitting}>
+            Save changes
+          </Button>
+        </form>
+        <p className="mt-5 flex items-center gap-1.5 text-sm text-muted">
+          <Mail className="h-4 w-4" /> {user.email}
+        </p>
+      </Card>
+    </Container>
   )
 }

@@ -1,6 +1,9 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
+import Container from '../components/ui/Container'
+import Card from '../components/ui/Card'
 import Alert from '../components/ui/Alert'
+import Spinner from '../components/ui/Spinner'
 import { verifyEmail } from '../lib/auth'
 import { apiErrorMessage } from '../lib/errors'
 
@@ -14,7 +17,6 @@ export default function VerifyEmailPage() {
   const ran = useRef(false)
 
   useEffect(() => {
-    // Guard against React StrictMode's double-invoke consuming the single-use token twice.
     if (ran.current) return
     ran.current = true
     if (!token) {
@@ -34,16 +36,25 @@ export default function VerifyEmailPage() {
   }, [token])
 
   return (
-    <div className="mx-auto max-w-md py-8 text-center">
-      <h1 className="mb-4 text-2xl font-bold">Email verification</h1>
-      {status === 'verifying' && <p className="text-gray-500">Verifying…</p>}
-      {status === 'success' && <Alert variant="success">{message}</Alert>}
-      {status === 'error' && <Alert variant="error">{message}</Alert>}
-      <p className="mt-6 text-sm">
-        <Link to="/login" className="text-emerald-600 hover:underline">
+    <Container className="py-16">
+      <Card className="mx-auto max-w-md p-8 text-center">
+        <h1 className="text-2xl font-bold text-ink">Email verification</h1>
+        <div className="mt-5">
+          {status === 'verifying' && (
+            <div className="flex justify-center py-4">
+              <Spinner className="h-6 w-6 text-brand-600" />
+            </div>
+          )}
+          {status === 'success' && <Alert variant="success">{message}</Alert>}
+          {status === 'error' && <Alert variant="error">{message}</Alert>}
+        </div>
+        <Link
+          to="/login"
+          className="mt-6 inline-block text-sm font-semibold text-brand-700 hover:text-brand-800"
+        >
           Continue to log in
         </Link>
-      </p>
-    </div>
+      </Card>
+    </Container>
   )
 }

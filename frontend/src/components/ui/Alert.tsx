@@ -1,21 +1,26 @@
 import type { ReactNode } from 'react'
-import clsx from 'clsx'
+import { cn } from '../../lib/cn'
 
-interface Props {
-  variant?: 'error' | 'success' | 'info'
-  children: ReactNode
+type Variant = 'error' | 'success' | 'info' | 'warning'
+
+const STYLES: Record<Variant, string> = {
+  error: 'border-danger/30 bg-danger-soft text-danger',
+  success: 'border-success/30 bg-success-soft text-success',
+  info: 'border-info/30 bg-info-soft text-info',
+  warning: 'border-warning/30 bg-warning-soft text-warning',
 }
 
-export default function Alert({ variant = 'info', children }: Props) {
+export default function Alert({
+  variant = 'info',
+  children,
+  className,
+}: {
+  variant?: Variant
+  children: ReactNode
+  className?: string
+}) {
   return (
-    <div
-      className={clsx(
-        'rounded-md border px-3 py-2 text-sm',
-        variant === 'error' && 'border-red-200 bg-red-50 text-red-700',
-        variant === 'success' && 'border-emerald-200 bg-emerald-50 text-emerald-700',
-        variant === 'info' && 'border-blue-200 bg-blue-50 text-blue-700',
-      )}
-    >
+    <div className={cn('rounded-lg border px-3.5 py-2.5 text-sm', STYLES[variant], className)}>
       {children}
     </div>
   )

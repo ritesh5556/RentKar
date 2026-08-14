@@ -1,0 +1,57 @@
+/* ============================================================================
+   RenkKar theme tokens — THE SINGLE SOURCE OF TRUTH FOR COLORS.
+   Change values here to re-skin the entire app. Tailwind v4 turns every
+   --color-* token into utilities automatically, e.g.:
+     --color-brand-600  ->  bg-brand-600 / text-brand-600 / border-brand-600
+     --color-ink        ->  text-ink / bg-ink
+   Components must use these tokens (never hard-coded hex or default grays).
+   ============================================================================ */
+@theme {
+  /* Brand — molten amber (motorcycle / Riders Share energy) */
+  --color-brand-50: #fff7ed;
+  --color-brand-100: #ffedd5;
+  --color-brand-200: #fed7aa;
+  --color-brand-300: #fdba74;
+  --color-brand-400: #fb923c;
+  --color-brand-500: #f97316;
+  --color-brand-600: #ea580c;
+  --color-brand-700: #c2410c;
+  --color-brand-800: #9a3412;
+  --color-brand-900: #7c2d12;
+  --color-brand-950: #431407;
+
+  /* Neutrals — warm "stone" for a premium, non-clinical feel */
+  --color-ink: #1c1917; /* primary text / near-black */
+  --color-ink-soft: #292524;
+  --color-muted: #57534e; /* secondary text */
+  --color-subtle: #a8a29e; /* tertiary text / icons */
+  --color-line: #e7e5e4; /* borders */
+  --color-line-soft: #f1f0ee;
+  --color-page: #faf9f7; /* app background */
+  --color-surface: #ffffff; /* cards / panels */
+
+  /* Night — dark sections (nav, hero, footer) */
+  --color-night: #14110d;
+  --color-night-2: #201a13;
+  --color-night-fg: #f5f4f2;
+  --color-night-muted: #b3aca3;
+
+  /* Semantic states (text/icon color + a soft tint background) */
+  --color-success: #15803d;
+  --color-success-soft: #dcfce7;
+  --color-warning: #b45309;
+  --color-warning-soft: #fef3c7;
+  --color-danger: #b91c1c;
+  --color-danger-soft: #fee2e2;
+  --color-info: #1d4ed8;
+  --color-info-soft: #dbeafe;
+
+  /* Rating stars */
+  --color-gold: #f59e0b;
+
+  /* Shape + elevation for a premium feel */
+  --radius-xl: 1rem;
+  --radius-2xl: 1.25rem;
+  --shadow-card: 0 1px 2px rgb(28 25 23 / 0.04), 0 10px 30px -14px rgb(28 25 23 / 0.15);
+  --shadow-pop: 0 12px 40px -12px rgb(28 25 23 / 0.28);
+}

@@ -1,13 +1,18 @@
 import { Link } from 'react-router-dom'
+import Container from '../components/ui/Container'
 
 export default function NotFoundPage() {
   return (
-    <div className="py-16 text-center">
-      <h1 className="text-3xl font-bold">404</h1>
-      <p className="mt-2 text-gray-600">This page could not be found.</p>
-      <Link to="/" className="mt-4 inline-block font-medium text-emerald-600 hover:underline">
+    <Container className="py-24 text-center">
+      <p className="text-sm font-semibold text-brand-700">404</p>
+      <h1 className="mt-2 text-3xl font-bold text-ink">Page not found</h1>
+      <p className="mt-2 text-muted">The page you're looking for doesn't exist.</p>
+      <Link
+        to="/"
+        className="mt-6 inline-block font-semibold text-brand-700 hover:text-brand-800"
+      >
         Go home
       </Link>
-    </div>
+    </Container>
   )
 }
