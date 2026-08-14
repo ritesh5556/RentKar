@@ -51,6 +51,13 @@ npm install
 npm run dev                   # http://localhost:5173  (proxies /api to the backend)
 ```
 
+## Theming
+
+All colors live in **one file**: [`frontend/src/styles/theme.css`](frontend/src/styles/theme.css).
+It defines Tailwind v4 `@theme` tokens (`--color-brand-600`, `--color-ink`, `--color-page`, …) that
+become utilities (`bg-brand-600`, `text-ink`, …). Components use only these tokens — **edit the token
+values to re-skin the whole app**; no component changes needed.
+
 ## Tests & checks
 ```bash
 cd backend && uv run pytest && uv run ruff check . && uv run pip-audit

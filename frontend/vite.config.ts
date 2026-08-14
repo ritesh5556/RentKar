@@ -9,8 +9,9 @@ export default defineConfig({
   server: {
     port: 5173,
     proxy: {
-      '/api': { target: 'http://localhost:8000', changeOrigin: true },
-      '/uploads': { target: 'http://localhost:8000', changeOrigin: true },
+      // 127.0.0.1 (not localhost) so the proxy hits uvicorn's IPv4 bind on Windows.
+      '/api': { target: 'http://127.0.0.1:8000', changeOrigin: true },
+      '/uploads': { target: 'http://127.0.0.1:8000', changeOrigin: true },
     },
   },
 })
