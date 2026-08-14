@@ -2,6 +2,7 @@
 
 from app.models.bike import Bike, BikeImage
 from app.models.booking import Booking, Payment
+from app.models.review import Review
 from app.models.user import EmailVerificationToken, RefreshToken, User
 
 __all__ = [
@@ -11,5 +12,6 @@ __all__ = [
     "EmailVerificationToken",
     "Payment",
     "RefreshToken",
+    "Review",
     "User",
 ]

@@ -97,6 +97,8 @@ class BikeSummary(BaseModel):
     state: str
     status: str
     primary_image: str | None = None
+    avg_rating: float | None = None
+    review_count: int = 0
     created_at: datetime
 
 
@@ -126,3 +128,5 @@ class BikeOut(BaseModel):
     images: list[BikeImageOut] = []
     owner: OwnerPublic
     is_owner: bool = False
+    avg_rating: float | None = None
+    review_count: int = 0

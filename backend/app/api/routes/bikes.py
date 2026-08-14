@@ -1,4 +1,4 @@
-"""Bike listing endpoints."""
+"""Bike listing + reviews-read endpoints."""
 
 from datetime import date
 from decimal import Decimal
@@ -12,14 +12,19 @@ from app.models.bike import Bike, BikeImage
 from app.models.user import User
 from app.schemas.bike import BikeCreate, BikeOut, BikeSummary, BikeUpdate, Category
 from app.schemas.common import Page
-from app.services import bike_service, booking_service, upload_service
+from app.schemas.review import BikeReviews
+from app.services import bike_service, booking_service, review_service, upload_service
 
 settings = get_settings()
 router = APIRouter(prefix="/bikes", tags=["bikes"])
 
+Rating = tuple[float | None, int]
+_NO_RATING: Rating = (None, 0)
 
-def _to_out(bike: Bike, viewer: User | None) -> BikeOut:
+
+def _to_out(bike: Bike, viewer: User | None, rating: Rating = _NO_RATING) -> BikeOut:
     out = BikeOut.model_validate(bike)
+    out.avg_rating, out.review_count = rating
     is_owner = viewer is not None and viewer.id == bike.owner_id
     out.is_owner = is_owner
     if not is_owner:
@@ -27,9 +32,10 @@ def _to_out(bike: Bike, viewer: User | None) -> BikeOut:
     return out
 
 
-def _to_summary(bike: Bike) -> BikeSummary:
+def _to_summary(bike: Bike, rating: Rating = _NO_RATING) -> BikeSummary:
     summary = BikeSummary.model_validate(bike)
     summary.primary_image = bike_service.primary_image_path(bike)
+    summary.avg_rating, summary.review_count = rating
     return summary
 
 
@@ -62,15 +68,16 @@ async def list_bikes(
         page=page,
         page_size=page_size,
     )
-    return Page(
-        items=[_to_summary(b) for b in bikes], total=total, page=page, page_size=page_size
-    )
+    ratings = await review_service.ratings_for(db, [b.id for b in bikes])
+    items = [_to_summary(b, ratings.get(b.id, _NO_RATING)) for b in bikes]
+    return Page(items=items, total=total, page=page, page_size=page_size)
 
 
 @router.get("/mine", response_model=list[BikeSummary])
 async def my_bikes(user: CurrentUser, db: DbSession) -> list[BikeSummary]:
     bikes = await bike_service.list_owner_bikes(db, user)
-    return [_to_summary(b) for b in bikes]
+    ratings = await review_service.ratings_for(db, [b.id for b in bikes])
+    return [_to_summary(b, ratings.get(b.id, _NO_RATING)) for b in bikes]
 
 
 @router.post("", response_model=BikeOut, status_code=status.HTTP_201_CREATED)
@@ -82,7 +89,8 @@ async def create_bike(data: BikeCreate, user: VerifiedUser, db: DbSession) -> Bi
 @router.get("/{bike_id}", response_model=BikeOut)
 async def get_bike(bike_id: int, viewer: OptionalUser, db: DbSession) -> BikeOut:
     bike = await bike_service.get_bike_or_404(db, bike_id)
-    return _to_out(bike, viewer)
+    rating = await review_service.bike_rating(db, bike.id)
+    return _to_out(bike, viewer, rating)
 
 
 @router.get("/{bike_id}/availability")
@@ -93,13 +101,23 @@ async def check_availability(
     return {"available": await booking_service.is_available(db, bike_id, start, end)}
 
 
+@router.get("/{bike_id}/reviews", response_model=BikeReviews)
+async def bike_reviews(bike_id: int, db: DbSession) -> BikeReviews:
+    await bike_service.get_bike_or_404(db, bike_id)
+    average, count, reviews = await review_service.list_bike_reviews(db, bike_id)
+    return BikeReviews(
+        average=average, count=count, items=[review_service.to_out(r) for r in reviews]
+    )
+
+
 @router.patch("/{bike_id}", response_model=BikeOut)
 async def update_bike(
     bike_id: int, data: BikeUpdate, user: CurrentUser, db: DbSession
 ) -> BikeOut:
     bike = await bike_service.require_owned_bike(db, bike_id, user)
     bike = await bike_service.update_bike(db, bike, data)
-    return _to_out(bike, user)
+    rating = await review_service.bike_rating(db, bike.id)
+    return _to_out(bike, user, rating)
 
 
 @router.delete("/{bike_id}", status_code=status.HTTP_204_NO_CONTENT)
@@ -136,7 +154,8 @@ async def upload_bike_images(
         )
     await db.commit()
     bike = await bike_service.get_bike_or_404(db, bike_id)
-    return _to_out(bike, user)
+    rating = await review_service.bike_rating(db, bike.id)
+    return _to_out(bike, user, rating)
 
 
 @router.delete("/{bike_id}/images/{image_id}", status_code=status.HTTP_204_NO_CONTENT)
